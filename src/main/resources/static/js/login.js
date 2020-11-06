@@ -19,7 +19,5 @@ document.getElementById("loginForm").addEventListener("submit", function (e) {
         if(response.status === 200) {
             window.location = "../index.html";    
         }
-    }).catch(error => {
-        debugger;
-    });
+    }).catch(error => console.error(error));
 });

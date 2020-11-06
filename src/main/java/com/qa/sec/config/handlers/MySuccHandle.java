@@ -1,4 +1,4 @@
-package com.qa.sec.config;
+package com.qa.sec.config.handlers;
 
 import java.io.IOException;
 
