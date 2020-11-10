@@ -2,9 +2,13 @@
 
 document.getElementById("testButton").addEventListener("click", function () {
     fetch("http://localhost:8080/user", {
-        credentials: "include"
+        credentials: "include",
+        headers: {
+            'Authorization': sessionStorage.getItem('jwt')
+        }
     })
         .then(response => {
+            debugger;
             if (response.status == 401) {
                 window.location = "./html/login.html";
                 return;

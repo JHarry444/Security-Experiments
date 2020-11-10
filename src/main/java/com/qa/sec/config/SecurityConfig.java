@@ -3,6 +3,7 @@ package com.qa.sec.config;
 import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -12,18 +13,27 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.qa.sec.config.handlers.MySuccHandle;
 import com.qa.sec.services.MyUserDetailsService;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+	@Value("${jwt.secret}")
+	private String jwtSecret;
+	@Value("${jwt.issuer}")
+	private String jwtIssuer;
+	@Value("${jwt.type}")
+	private String jwtType;
+	@Value("${jwt.audience}")
+	private String jwtAudience;
 
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
@@ -58,20 +68,21 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		// setAllowedHeaders is important! Without it, OPTIONS preflight request
 		// will fail with 403 Invalid CORS request
 		configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
+		configuration.setExposedHeaders(Arrays.asList("Authorization"));
 		final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/**", configuration);
 		return source;
 	}
 
-	@Autowired
-	private MySuccHandle succ;
-
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		http.csrf().disable();
-		http.cors().and().formLogin().loginProcessingUrl("/login").successHandler(succ).and().authorizeRequests()
+		http.csrf().disable().cors().and().formLogin().loginProcessingUrl("/login").and().authorizeRequests()
 				.anyRequest().authenticated();
+		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 		http.exceptionHandling().authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED));
+		http.addFilter(
+				new JwtAuthenticationFilter(authenticationManager(), jwtAudience, jwtIssuer, jwtSecret, jwtType));
+		http.addFilter(new JwtAuthorizationFilter(authenticationManager(), jwtSecret, userDetailsService));
 	}
 
 	@Override
